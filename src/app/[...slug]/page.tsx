@@ -1,6 +1,6 @@
 // src/app/[...slug]/page.tsx
 import { notFound } from 'next/navigation'
-import { client } from '@/sanity/lib/client' // adjust path if needed
+import { client } from '@/sanity/lib/client'
 
 export async function generateStaticParams() {
   const slugs = await client.fetch<string[]>(
@@ -9,8 +9,11 @@ export async function generateStaticParams() {
   return slugs.map((s) => ({ slug: s.split('/') }))
 }
 
-// The props are now typed directly in the function signature
-export default async function Page({ params }: { params: { slug: string[] } }) {
+export default async function Page({
+  params,
+}: {
+  params: { slug: string[] }
+}) {
   const slug = params.slug.join('/')
   const data = await client.fetch(
     `*[_type=="page" && slug.current==$slug][0]`,
@@ -23,7 +26,7 @@ export default async function Page({ params }: { params: { slug: string[] } }) {
   return (
     <main className="prose mx-auto p-6">
       <h1>{data.title}</h1>
-      {/* TODO: render rich body with @portabletext/react if you need */}
+      {/* TODO: render rich body with @portabletext/react if needed */}
     </main>
   )
 }
