@@ -1,8 +1,8 @@
 // src/app/[...slug]/page.tsx
 import { notFound } from 'next/navigation'
-import { client } from '@/sanity/lib/client' // adjust if your path differs
+import { client } from '@/sanity/lib/client'
 
-// Types for the page document you store in Sanity
+type PageParams = { slug: string[] }
 type SanityPage = {
   _id: string
   title?: string
@@ -11,7 +11,6 @@ type SanityPage = {
 }
 
 export async function generateStaticParams() {
-  // Get all page slugs from Sanity and split by "/" for catch-all route
   const slugs = await client.fetch<string[]>(
     `*[_type == "page" && defined(slug.current)].slug.current`
   )
@@ -21,25 +20,24 @@ export async function generateStaticParams() {
 export default async function Page({
   params,
 }: {
-  params: { slug: string[] }
+  // NOTE: params is async in the new Next.js types
+  params: Promise<PageParams>
 }) {
-  const slug = params.slug?.join('/') ?? ''
+  const { slug: slugParts } = await params
+  const slug = (slugParts ?? []).join('/')
 
-  // Fetch the matching page
   const data = await client.fetch<SanityPage | null>(
     `*[_type == "page" && slug.current == $slug][0]`,
     { slug },
-    { next: { revalidate: 60 * 60 * 24 } } // revalidate every 24h
+    { next: { revalidate: 60 * 60 * 24 } }
   )
 
-  if (!data) {
-    notFound()
-  }
+  if (!data) notFound()
 
   return (
     <main className="prose mx-auto p-6">
       <h1>{data.title ?? 'Untitled page'}</h1>
-      {/* TODO: render rich text, e.g. with @portabletext/react if you have data.body */}
+      {/* TODO: render data.body with @portabletext/react if you use Portable Text */}
     </main>
   )
 }
