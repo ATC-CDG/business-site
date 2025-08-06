@@ -1,26 +1,26 @@
-import { client } from '@/sanity/lib/client'
+// src/app/[...slug]/page.tsx
 import { notFound } from 'next/navigation'
+import { client } from '@/sanity/lib/client' // adjust path if needed
 
-type PageParams = {
-  params: {
-    slug: string[]
-  }
+// Add this at the top of your file
+interface PageProps {
+  params: { slug: string[] }
 }
 
 export async function generateStaticParams() {
-  // Fetch all slugs from Sanity
-  const slugs = await client.fetch<string[]>(`*[_type=="page"].slug.current`)
-  return slugs.map((slug) => ({ slug: slug.split('/') }))
+  const slugs = await client.fetch<string[]>(
+    `*[_type=="page" && defined(slug.current)].slug.current`
+  )
+  return slugs.map((s) => ({ slug: s.split('/') }))
 }
 
-export default async function Page({ params }: PageParams) {
-  const slug = params?.slug?.join('/') ?? ''
-
-  // Fetch the matching page document from Sanity
+// Keep only this one component definition
+export default async function Page({ params }: PageProps) {
+  const slug = params.slug.join('/')
   const data = await client.fetch(
     `*[_type=="page" && slug.current==$slug][0]`,
     { slug },
-    { next: { revalidate: 86400 } } // Revalidate every 24 hours
+    { next: { revalidate: 86400 } }
   )
 
   if (!data) notFound()
@@ -28,7 +28,7 @@ export default async function Page({ params }: PageParams) {
   return (
     <main className="prose mx-auto p-6">
       <h1>{data.title}</h1>
-      {/* Render body content here with PortableText if needed */}
+      {/* TODO: render rich body with @portabletext/react if you need */}
     </main>
   )
 }
